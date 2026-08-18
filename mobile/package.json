@@ -1,0 +1,15 @@
+{
+  "name": "safe-campus-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Safe Campus mobile app (Capacitor wrapper around the Flask web app)",
+  "scripts": {
+    "sync": "cap sync android",
+    "open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
+  }
+}
