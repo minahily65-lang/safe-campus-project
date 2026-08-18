@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Safe Campus | Security</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+</head>
+<body>
+<div class="app-screen">
+  <div class="app-scroll">
+    <header class="app-header">
+      <div class="brand"><img src="{{ url_for('static', filename='assets/safe-campus-logo.png') }}" alt=""><span>SAFE CAMPUS</span></div>
+      <a class="header-link" href="{{ url_for('logout') }}">Logout</a>
+    </header>
+
+    <main class="content">
+      <section class="hero"><img class="hero-logo" src="{{ url_for('static', filename='assets/security.png') }}" alt="Security"><div><h1>Security Dashboard</h1><p>Welcome, <b>{{ user.name }}</b></p><p>{{ user.email }}</p></div></section>
+
+      <section class="card alarm-panel">
+        <h3>🔔 SOS Alarm</h3>
+        <p id="alarmStatus">Tap Enable Alarm once. This gives the browser permission to play emergency audio when a new SOS arrives.</p>
+        <button class="btn" id="enableAlarm">🔊 Enable SOS Alarm</button>
+        <button class="btn gray" id="stopAlarm" disabled>🔇 Stop Alarm</button>
+      </section>
+
+      <section class="card" id="alertsCard">
+        <h3>🚨 Live SOS Alerts</h3>
+        <p>New alerts are checked automatically every 3 seconds.</p>
+        <button class="btn" onclick="loadAlerts()">Refresh Alerts</button>
+        <div id="alerts"></div>
+      </section>
+
+      <section class="card" id="historyCard">
+        <h3>📜 Emergency History</h3>
+        <div id="history">Loading...</div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="#alertsCard" class="active"><span class="icon">🚨</span>Alerts</a>
+    <a href="#historyCard"><span class="icon">▤</span>History</a>
+    <a href="#" onclick="loadAlerts();return false"><span class="icon">↻</span>Refresh</a>
+    <a href="{{ url_for('logout') }}"><span class="icon">⇥</span>Logout</a>
+  </nav>
+</div>
+
+<audio id="alarm" src="{{ url_for('static', filename='assets/alarm.mp3') }}" preload="auto"></audio>
+<script>
+const alarm = document.getElementById('alarm');
+const alarmStatus = document.getElementById('alarmStatus');
+const enableButton = document.getElementById('enableAlarm');
+const stopButton = document.getElementById('stopAlarm');
+let alarmEnabled = false;
+let previousPendingIds = new Set();
+alarm.loop = true;
+
+enableButton.onclick = async () => {
+  try {
+    alarm.currentTime = 0;
+    await alarm.play();
+    alarm.pause();
+    alarm.currentTime = 0;
+    alarmEnabled = true;
+    enableButton.disabled = true;
+    stopButton.disabled = false;
+    alarmStatus.textContent = 'SOS alarm enabled. New pending emergencies will ring automatically.';
+    alarmStatus.className = 'status success';
+    loadAlerts();
+  } catch (e) {
+    alarmStatus.textContent = 'Sound permission was blocked. Allow sound for this site and press Enable again.';
+    alarmStatus.className = 'status danger';
+  }
+};
+
+stopButton.onclick = () => {
+  alarm.pause(); alarm.currentTime = 0;
+  alarmStatus.textContent = 'Alarm stopped. It will ring again if a new pending SOS appears.';
+};
+
+function playAlarm(){
+  if (!alarmEnabled) return;
+  alarm.currentTime = 0;
+  alarm.play().catch(e => console.warn('Alarm playback blocked:', e));
+}
+
+function stopIfNoPending(alerts){
+  if (!alerts.some(a => a.status === 'Pending')) { alarm.pause(); alarm.currentTime = 0; }
+}
+
+async function loadAlerts(){
+  try {
+    const r = await fetch('/api/security/alerts');
+    const d = await r.json();
+    const el = document.getElementById('alerts');
+    if (!d.success) { el.innerHTML = `<div class="status danger">${d.message || 'Unable to load alerts.'}</div>`; return; }
+
+    const pending = d.alerts.filter(a => a.status === 'Pending');
+    const pendingIds = new Set(pending.map(a => a._id));
+    const newAlert = [...pendingIds].some(id => !previousPendingIds.has(id));
+    if (newAlert) playAlarm();
+    previousPendingIds = pendingIds;
+    stopIfNoPending(d.alerts);
+
+    if (!d.alerts.length) { el.innerHTML = '<div class="status">No SOS alerts.</div>'; return; }
+    el.innerHTML = d.alerts.map(a => `
+      <div class="status alert-item ${a.status === 'Pending' ? 'active-alert' : ''}">
+        <b>${a.student_name || 'Unknown Student'}</b><br>
+        <span class="badge ${a.status === 'Pending' ? 'pending' : 'resolved'}">${a.status}</span><br>
+        Location: ${a.latitude}, ${a.longitude}<br>
+        <a href="https://www.google.com/maps/search/?api=1&query=${a.latitude},${a.longitude}" target="_blank">Open Google Maps</a>
+        ${a.status === 'Pending' ? `<button class="btn green" style="margin-top:9px" onclick="resolveAlert('${a._id}')">Resolve Alert</button>` : ''}
+      </div>`).join('');
+  } catch(e) { document.getElementById('alerts').innerHTML = '<div class="status danger">Connection error while loading alerts.</div>'; }
+}
+
+async function resolveAlert(id){
+  const remarks = prompt('Enter resolution remarks:', 'Emergency handled by security staff');
+  if (remarks === null) return;
+  const r = await fetch('/api/security/alerts/' + id + '/resolve', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({remarks})});
+  const d = await r.json();
+  alert(d.message);
+  await loadAlerts();
+  await loadHistory();
+}
+
+async function loadHistory(){
+  const r = await fetch('/api/history');
+  const d = await r.json();
+  const el = document.getElementById('history');
+  if (!d.success) { el.textContent = d.message || 'Unable to load history.'; return; }
+  el.innerHTML = d.history.length ? d.history.map(h => `<div class="status"><b>${h.student_name || ''}</b> · ${h.security_name || ''}<br>${h.remarks || ''}<br><small>${h.resolved_at || ''}</small></div>`).join('') : '<div class="status">No history records.</div>';
+}
+
+loadAlerts();
+loadHistory();
+setInterval(loadAlerts, 3000);
+</script>
+</body>
+</html>

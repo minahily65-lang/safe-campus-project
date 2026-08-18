@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Safe Campus | Loading</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/splash.css') }}">
+</head>
+<body>
+<main class="splash-card">
+  <div class="splash-content">
+    <div class="shield-logo">
+      <img src="{{ url_for('static', filename='assets/safe-campus-logo.png') }}" alt="Safe Campus logo">
+    </div>
+    <h1>SAFE CAMPUS</h1>
+    <p class="tagline">A Real-Time Python<br>Mobile Security Solution</p>
+    <div class="loader"></div>
+    <p class="loading-text">Loading...</p>
+  </div>
+</main>
+<script>
+  setTimeout(() => { window.location.href = "{{ url_for('login_page') }}"; }, 2500);
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Safe Campus | Admin</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+</head>
+<body>
+<div class="app-screen">
+  <div class="app-scroll">
+    <header class="app-header">
+      <div class="brand"><img src="{{ url_for('static', filename='assets/safe-campus-logo.png') }}" alt=""><span>SAFE CAMPUS</span></div>
+      <a class="header-link" href="{{ url_for('logout') }}">Logout</a>
+    </header>
+
+    <main class="content">
+      <section class="hero"><img class="hero-logo" src="{{ url_for('static', filename='assets/admin.png') }}" alt="Admin"><div><h1>Admin Dashboard</h1><p>Welcome, <b>{{ user.name }}</b></p><p>{{ user.email }}</p></div></section>
+
+      <div class="stats">
+        <div class="stat"><strong id="usersCount">-</strong><span>Users</span></div>
+        <div class="stat"><strong id="alertsCount">-</strong><span>SOS Alerts</span></div>
+        <div class="stat"><strong id="pendingCount">-</strong><span>Pending</span></div>
+      </div>
+
+      <section class="card" id="usersCard"><h3>👥 Manage Users</h3><div id="users">Loading...</div></section>
+      <section class="card" id="alertsCard"><h3>🚨 SOS Alerts</h3><div id="alerts">Loading...</div></section>
+      <section class="card" id="historyCard"><h3>📜 Emergency History</h3><div id="history">Loading...</div></section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="#usersCard" class="active"><span class="icon">👥</span>Users</a>
+    <a href="#alertsCard"><span class="icon">🚨</span>Alerts</a>
+    <a href="#historyCard"><span class="icon">▤</span>History</a>
+    <a href="{{ url_for('logout') }}"><span class="icon">⇥</span>Logout</a>
+  </nav>
+</div>
+<script>
+function esc(v){return String(v ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+async function load(){
+  try{
+    const s=await (await fetch('/api/admin/status')).json();
+    if(!s.success) return;
+    document.getElementById('usersCount').textContent=s.users;
+    document.getElementById('alertsCount').textContent=s.alerts;
+    document.getElementById('pendingCount').textContent=s.pending;
+
+    const u=await (await fetch('/api/admin/users')).json();
+    document.getElementById('users').innerHTML=u.users?.length ? `<div class="table-wrap"><table class="table"><tr><th>Name</th><th>Email</th><th>Role</th><th>Action</th></tr>${u.users.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.email)}</td><td>${esc(x.role)}</td><td><button class="btn gray" onclick="delUser('${x.id}')">Delete</button></td></tr>`).join('')}</table></div>` : '<div class="status">No users found.</div>';
+
+    const a=await (await fetch('/api/admin/alerts')).json();
+    document.getElementById('alerts').innerHTML=a.alerts?.length ? a.alerts.map(x=>`<div class="status"><b>${esc(x.student_name)}</b><br><span class="badge ${x.status==='Pending'?'pending':'resolved'}">${esc(x.status)}</span><br>${esc(x.latitude)}, ${esc(x.longitude)}</div>`).join('') : '<div class="status">No alerts.</div>';
+
+    const h=await (await fetch('/api/admin/history')).json();
+    document.getElementById('history').innerHTML=h.history?.length ? h.history.map(x=>`<div class="status"><b>${esc(x.student_name)}</b> · ${esc(x.security_name)}<br>${esc(x.remarks||'')}</div>`).join('') : '<div class="status">No history.</div>';
+  }catch(e){console.error(e);}
+}
+async function delUser(id){
+  if(!confirm('Delete this user?')) return;
+  const r=await fetch('/api/admin/users/'+id,{method:'DELETE'});
+  const d=await r.json(); alert(d.message); load();
+}
+load();
+setInterval(load,10000);
+</script>
+</body>
+</html>

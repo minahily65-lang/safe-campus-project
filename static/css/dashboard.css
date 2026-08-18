@@ -1,0 +1,21 @@
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f4fa;color:#24243a}.topbar{height:70px;background:#43208b;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 28px}.brand{font-weight:800;font-size:21px}.topbar a{color:#fff;text-decoration:none;font-weight:600}.page{max-width:1050px;margin:28px auto;padding:0 18px}.hero{background:#fff;border-radius:18px;padding:24px;display:flex;align-items:center;gap:20px;box-shadow:0 5px 20px rgba(0,0,0,.06)}.avatar{width:85px;height:85px;object-fit:contain;border-radius:50%;background:#eee}.hero h1{margin:0 0 7px;color:#382079}.hero p{margin:4px 0;color:#666}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}.card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 5px 20px rgba(0,0,0,.06)}.card h3{margin:0 0 12px;color:#382079}.btn{border:0;border-radius:9px;padding:13px 18px;background:#43208b;color:white;font-weight:700;cursor:pointer}.btn.red{background:#d72f2f}.btn.gray{background:#666}.btn.full{width:100%}.status{margin-top:12px;padding:10px;border-radius:8px;background:#f0eff7}.map{width:100%;height:320px;border:0;border-radius:12px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:11px;border-bottom:1px solid #eee;font-size:14px}.table th{color:#43208b}.badge{padding:5px 9px;border-radius:20px;font-size:12px;font-weight:700}.pending{background:#fff1cf;color:#946200}.resolved{background:#dcf7e4;color:#16713a}.danger{color:#c62828}.modal-note{font-size:13px;color:#666}@media(max-width:800px){.grid{grid-template-columns:1fr}.hero{flex-direction:column;text-align:center}.topbar{padding:0 15px}}
+
+.alarm-panel {
+    border-left: 5px solid #43208b;
+}
+
+.alarm-panel button {
+    margin-right: 8px;
+    margin-top: 5px;
+}
+
+.alert-item.active-alert {
+    border: 2px solid #d72f2f;
+    background: #fff5f5;
+    animation: alertPulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes alertPulse {
+    from { box-shadow: 0 0 0 rgba(215,47,47,0); }
+    to { box-shadow: 0 0 18px rgba(215,47,47,.22); }
+}

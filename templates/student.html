@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Safe Campus | Student</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+</head>
+<body>
+<div class="app-screen">
+  <div class="app-scroll">
+    <header class="app-header">
+      <div class="brand"><img src="{{ url_for('static', filename='assets/safe-campus-logo.png') }}" alt=""><span>SAFE CAMPUS</span></div>
+      <a class="header-link" href="{{ url_for('logout') }}">Logout</a>
+    </header>
+
+    <main class="content">
+      <section class="hero">
+        <img class="hero-logo" src="{{ url_for('static', filename='assets/student.png') }}" alt="Student">
+        <div><h1>Student Dashboard</h1><p>Welcome, <b>{{ user.name }}</b></p><p>{{ user.email }}</p></div>
+      </section>
+
+      <section class="card" id="homeCard">
+        <h3>🚨 Emergency SOS</h3>
+        <p>Press SOS only when you need immediate campus security assistance. Your current location will be sent to the security team.</p>
+        <button class="btn red" id="sos">🚨 SOS Emergency</button>
+        <div id="sosStatus" class="status">No emergency sent.</div>
+      </section>
+
+      <section class="card">
+        <h3>📍 My Location</h3>
+        <p id="location">Location not shared yet.</p>
+        <button class="btn" id="locationBtn">Share Current Location</button>
+        <iframe id="map" class="map" src="about:blank" title="Current location map" style="margin-top:12px"></iframe>
+      </section>
+
+      <section class="card" id="historyCard">
+        <h3>📜 Emergency History</h3>
+        <p>Resolved emergency records.</p>
+        <button class="btn" id="historyBtn">View History</button>
+        <div id="history">Tap the button to load history.</div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="#homeCard" class="active"><span class="icon">⌂</span>Home</a>
+    <a href="#" id="navLocation"><span class="icon">⌖</span>Location</a>
+    <a href="#historyCard"><span class="icon">▤</span>History</a>
+    <a href="{{ url_for('logout') }}"><span class="icon">⇥</span>Logout</a>
+  </nav>
+</div>
+
+<audio id="siren" src="{{ url_for('static', filename='assets/siren.mp3') }}" preload="auto"></audio>
+<script>
+const siren = document.getElementById('siren');
+
+function getLocation() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      p => resolve({latitude:p.coords.latitude, longitude:p.coords.longitude}),
+      () => resolve(null),
+      {enableHighAccuracy:true, timeout:7000, maximumAge:0}
+    );
+  });
+}
+
+function showLocation(d) {
+  document.getElementById('location').textContent = `Latitude: ${Number(d.latitude).toFixed(6)} | Longitude: ${Number(d.longitude).toFixed(6)}`;
+  document.getElementById('map').src = `https://maps.google.com/maps?q=${d.latitude},${d.longitude}&z=16&output=embed`;
+}
+
+async function loadLocation() {
+  const d = await getLocation();
+  if (d) { showLocation(d); return d; }
+  const r = await fetch('/api/student/location', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  const x = await r.json();
+  if (x.success) showLocation(x);
+  return x.success ? x : null;
+}
+
+document.getElementById('locationBtn').onclick = loadLocation;
+document.getElementById('navLocation').onclick = e => { e.preventDefault(); document.getElementById('locationBtn').click(); };
+
+document.getElementById('sos').onclick = async () => {
+  const button = document.getElementById('sos');
+  const status = document.getElementById('sosStatus');
+  if (!confirm('Send SOS emergency alert with your current location?')) return;
+
+  // Start local siren during the user gesture. Browser policies allow this after a click.
+  try { siren.currentTime = 0; await siren.play(); } catch (e) { console.warn('Siren blocked:', e); }
+
+  button.disabled = true;
+  button.textContent = 'Sending SOS...';
+  try {
+    const d = await getLocation();
+    const r = await fetch('/api/student/sos', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d || {})});
+    const x = await r.json();
+    status.textContent = x.success ? 'SOS sent. Security has been notified.' : (x.message || 'SOS failed.');
+    status.className = 'status ' + (x.success ? 'success' : 'danger');
+    if (x.success) {
+      showLocation(x);
+      setTimeout(() => { siren.pause(); siren.currentTime = 0; }, 5000);
+    } else {
+      siren.pause(); siren.currentTime = 0;
+    }
+  } catch (e) {
+    status.textContent = 'Network error. SOS could not be sent.';
+    status.className = 'status danger';
+    siren.pause(); siren.currentTime = 0;
+  } finally {
+    button.disabled = false;
+    button.textContent = '🚨 SOS Emergency';
+  }
+};
+
+document.getElementById('historyBtn').onclick = async () => {
+  const r = await fetch('/api/history');
+  const d = await r.json();
+  const el = document.getElementById('history');
+  if (!d.success) { el.textContent = d.message; return; }
+  if (!d.history.length) { el.innerHTML = '<div class="status">No history records found.</div>'; return; }
+  el.innerHTML = d.history.map(h => `<div class="status"><b>${h.student_name || ''}</b> · ${h.security_name || 'Pending'}<br>${h.remarks || ''}<br><small>${h.resolved_at || ''}</small></div>`).join('');
+};
+</script>
+</body>
+</html>
