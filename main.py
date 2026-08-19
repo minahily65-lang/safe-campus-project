@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from functools import wraps
 from database import (
@@ -17,7 +19,7 @@ from gps import GPS
 from bson.objectid import ObjectId
 
 app = Flask(__name__)
-app.secret_key = "safe-campus-change-this-secret-key"
+app.secret_key = os.environ.get("SECRET_KEY", "safe-campus-change-this-secret-key")
 
 
 def login_required(role=None):
@@ -321,9 +323,11 @@ def not_found(error):
 
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
     print("==========================================")
     print("       SAFE CAMPUS WEB APPLICATION")
     print("==========================================")
-    print("Open: http://127.0.0.1:5000")
+    print(f"Open: http://127.0.0.1:{port}")
     print("==========================================")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=debug)

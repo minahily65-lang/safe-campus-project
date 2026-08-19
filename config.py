@@ -2,6 +2,8 @@
 # SAFE CAMPUS - DATABASE CONFIGURATION
 # =========================================================
 
+import os
+
 from pymongo import MongoClient
 
 
@@ -9,9 +11,9 @@ from pymongo import MongoClient
 # MONGODB SETTINGS
 # =========================================================
 
-MONGO_URI = "mongodb://localhost:27017/"
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
 
-DATABASE_NAME = "safe_campus"
+DATABASE_NAME = os.environ.get("DATABASE_NAME", "safe_campus")
 
 
 # =========================================================
