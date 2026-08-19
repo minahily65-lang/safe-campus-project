@@ -3,11 +3,7 @@
   "appName": "Safe Campus",
   "webDir": "www",
   "server": {
-    "url": "http://192.168.100.32:5000",
-    "cleartext": true,
-    "androidScheme": "http"
-  },
-  "android": {
-    "allowMixedContent": true
+    "url": "https://safe-campus-project.onrender.com",
+    "androidScheme": "https"
   }
 }
