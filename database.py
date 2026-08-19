@@ -1,3 +1,5 @@
+import os
+
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
@@ -7,8 +9,8 @@ from datetime import datetime
 # MONGODB CONNECTION
 # =========================================================
 
-MONGO_URI = "mongodb://localhost:27017/"
-DATABASE_NAME = "safe_campus"
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+DATABASE_NAME = os.environ.get("DATABASE_NAME", "safe_campus")
 
 client = MongoClient(MONGO_URI)
 
